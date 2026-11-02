@@ -250,10 +250,15 @@ section hw
   -- Define any functions with the following types.
   -- If you can't, explain why
 
-  def ex1 : α → β → α := sorry
-  def ex2 : (α → β → γ) → β → α → γ := sorry
-  def ex3 : (α → (β → γ)) → (α → β) → α → γ := sorry
-  def ex4 : ((α → β) → γ) → (β → γ → δ) → (α → β) → α → δ := sorry
+  def ex1 : α → β → α := 
+    λ x _ ↦ x 
+  def ex2 : (α → β → γ) → β → α → γ := 
+    λ f a b ↦ (f b) a
+  def ex3 : (α → (β → γ)) → (α → β) → α → γ := 
+    λ f g a ↦ (f a) (g a)
+  def ex4 : ((α → β) → γ) → (β → γ → δ) → (α → β) → α → δ := 
+    λ f g h a ↦ g (h a) (f h)
   def ex5 : (α → β) → β → α := sorry
+  -- can't define, because we don't have α or any function with the codomain α as an argument 
 
 end hw
