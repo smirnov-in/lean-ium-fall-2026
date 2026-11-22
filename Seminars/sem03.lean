@@ -235,13 +235,26 @@ example (x : α) (h : p) : x = x ∧ p := by
 -/
 section hw
   example : ∀ p q : Prop, p ∧ q ↔ ∀ r : Prop, (p → q → r) → r :=
-    sorry
+    λ p q ↦ ⟨λ hpq r hpqr ↦ hpqr hpq.left hpq.right,
+    λ hpqr ↦ Or.elim (Classical.em (p ∧ q)) id (λ h ↦ False.elim ((hpqr False) (λ hp hq ↦ h ⟨hp, hq⟩)))⟩
 
   example : ∀ p q : Prop, p ∨ q ↔ ∀ r : Prop, (p → r) → (q → r) → r :=
-    sorry
+    λ p q ↦ ⟨λ h ↦ Or.elim h (λ hp _ hpr _ ↦ hpr hp) (λ hq _ _ hqr ↦ hqr hq),
+    λ hh ↦ Or.elim (Classical.em p) (λ hp ↦ Or.inl hp) (λ hnp ↦ Or.elim (Classical.em q) (λ hq ↦ Or.inr hq) (λ hnq ↦ False.elim (hh False hnp hnq)))⟩
 
-  example : (∃ x : α, P x) ↔ ∀ r : Prop, (∀ x : α, P x → r) → r :=
-    sorry
+  example : (∃ x : α, P x) ↔ ∀ r : Prop, (∀ x : α, P x → r) → r := by
+    constructor
+    intro hP
+    rcases hP with ⟨x, proof⟩
+    intro r
+    intro hr
+    apply hr x
+    exact proof
+    intro h
+    have not_forall_not : (¬ ∀ x : α, ¬ P x) → ∃ x : α, P x :=
+      λ h ↦ Or.elim (Classical.em (∃ x : α, P x)) id (λ h_not_exists ↦ False.elim (h (λ x h_Px ↦ h_not_exists ⟨x, h_Px⟩)))
+    apply not_forall_not
+    exact h False
 
   theorem knaster_tarski
     (R : α → α → Prop)
@@ -251,7 +264,8 @@ section hw
       (∀ z : α, (∀ x : α, P x → R z x) → R z m))
     (f : α → α)
     (mono : ∀ x y : α, R x y → R (f x) (f y)) :
-    ∃ p : α, R (f p) p ∧ R p (f p) := sorry
+    ∃ p : α, R (f p) p ∧ R p (f p) := by
+    sorry
 
   /-- Explain what this theorem means --/
   theorem girard
@@ -262,4 +276,12 @@ section hw
       ∀ (P : X α → Prop), P (ε (Λ f) α) ↔ P (f α))
     : False :=
     sorry
+    --We consider a function π that send functions (on types)
+    --to types, a function X (from types to types), and two
+    --functions ε and Λ, the first send terms of π X to dependent
+    --functions f : (α : Type) → X α and the second works in the
+    --opposite way. The theorem means that assuming ε ∘ Λ = id
+    --for such ε and Λ we obtain a contradiction,
+    --i.e. two functions ε and Λ with such domen and codomen
+    --can't be the inverse of each other.
 end hw
