@@ -226,15 +226,24 @@ end induction
 -/
 section hw
   -- Define sumTo n k := 1 + ... + n
-  def sumTo (n : Nat) : Nat := sorry
+  def sumTo (n : Nat) : Nat :=
+    match n with
+    | Nat.zero        => Nat.zero
+    | Nat.succ m  => sumTo m + Nat.succ m
 
   theorem gauss :
       ∀ n : Nat, 2 * sumTo n = n * (n + 1) := by
-    sorry
+      intro n
+      have double_eq_2 (m : Nat) : 2 * sumTo m.succ = 2 * sumTo m + 2 * m.succ := by
+        rw [sumTo.eq_2]
+        rw [Nat.left_distrib]
+      induction n
+      case zero => rfl
+      case succ n ih => rw [double_eq_2, ih, ←Nat.right_distrib, Nat.mul_comm]
 
   theorem exp_growth :
       ∀ k : Nat, ∃ N : Nat, ∀ n : Nat, N ≤ n → n^k ≤ 2^n := by
-    sorry
+        sorry
 
   -- Might be useful:
   #check Nat.mul_mod_right
@@ -246,9 +255,67 @@ section hw
   theorem sqrtTwoStep :
       ∀ a b : Nat, a ^ 2 = 2 * b ^ 2 →
       ∃ c : Nat, a = 2 * c ∧ b ^ 2 = 2 * c ^ 2 := by
-    sorry
+    intro a b h
+    have a_mod_2_eq_0 : a % 2 = 0 := by
+      rcases Nat.mod_two_eq_zero_or_one a with inl | inr
+      exact inl
+      have h1 : a * a % 2 = a % 2 * (a % 2) % 2 := Nat.mul_mod a a 2
+      rw [inr] at h1
+      rw [Nat.pow_two] at h
+      rw [h] at h1
+      rw [Nat.mul_mod_right] at h1
+      contradiction
+    rcases Nat.dvd_of_mod_eq_zero a_mod_2_eq_0 with ⟨c, proof⟩
+    have zero_lt_two : 0 < 2 := by
+      have zero_lt_1 : 0 < Nat.succ 0 := by
+        exact Nat.lt_succ_self 0
+      have  one_lt_2 : Nat.succ 0 < Nat.succ (Nat.succ 0) := by
+        exact Nat.lt_succ_self (Nat.succ 0)
+      have zero_lt_2 : 0 < Nat.succ (Nat.succ 0) :=
+        Nat.lt_trans zero_lt_1 one_lt_2
+      exact zero_lt_2
+    rw [proof] at h
+    simp only [Nat.pow_two] at h
+    rw [Nat.mul_assoc] at h
+    have proof2 : c * (2 * c) = b * b := by
+      exact Nat.eq_of_mul_eq_mul_left zero_lt_two h
+    rw [←Nat.mul_assoc, Nat.mul_comm, ←Nat.mul_assoc, Nat.mul_comm] at proof2
+    simp only [←Nat.pow_two] at proof2
+    rw [eq_comm] at proof2
+    exists c
 
   theorem sqrtTwoIrrational: ∀ a b : Nat, 0 < b → a^2 ≠ 2 * b^2 := by
-    sorry
+    intro a b
+    intro h
+    intro h1
+    have mul_two_leq_or_zero : ∀ b c : Nat, b ^ 2 = 2 * c ^ 2 → c < b ∨ c = 0 := by
+      intro b c h__1
+      rcases Nat.lt_or_ge c b with h_lt | h_le
+      · left
+        exact h_lt
+      · right
+        simp only [Nat.pow_two] at h__1
+        have h__2 : b * b ≤ c * c := Nat.mul_self_le_mul_self h_le
+        have c2_zero : c * c = 0 := by
+          rw [h__1] at h__2
+          conv at h__2 =>
+            rhs
+            rw [← Nat.zero_add (c * c)]
+          rw [Nat.two_mul] at h__2
+          exact Nat.eq_zero_of_le_zero (Nat.add_le_add_iff_right.mp h__2)
+        exact (Nat.mul_eq_zero.mp c2_zero).elim id id
+    have mul_eq_zero2 : ∀ b c : Nat, b ^ 2 = 2 * c ^ 2 → c = 0 → b = 0 := by
+      intro b c h_1 h_2
+      rw [h_2] at h_1
+      rw [Nat.pow_two, Nat.pow_two] at h_1
+      rw [Nat.mul_zero] at h_1
+      exact Or.elim (Nat.mul_eq_zero.mp h_1) id id
+    have b_zero : ∀ b a : Nat, a ^ 2 = 2 * b ^ 2 → b = 0 :=
+      λ b ↦ Nat.strongRecOn b (λ b h_ind a hh ↦
+        let ⟨c, hc⟩ := sqrtTwoStep a b hh
+        Or.elim (mul_two_leq_or_zero b c hc.right) (λ hcb ↦ mul_eq_zero2 b c hc.right (h_ind c hcb b hc.right)) (λ hc0 ↦ mul_eq_zero2 b c hc.right hc0))
+    have not_h : b = 0 := b_zero b a h1
+    rw [not_h] at h
+    contradiction
 
 end hw
